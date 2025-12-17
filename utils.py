@@ -145,3 +145,68 @@ def log_login_attempt(username: str, ip: str, success: bool):
     status = "SUCCESS" if success else "FAILED"
     logger.info(f"[LOGIN] {username} from {ip} → {status}")
 
+# ---------------------------------------------------------
+# RANDOM SECRET GENERATOR
+# ---------------------------------------------------------
+def generate_random_secret(length: int = 32) -> str:
+    """Generate a cryptographically secure random string."""
+    return secrets.token_urlsafe(length)
+
+
+# ---------------------------------------------------------
+# HTTP REQUEST HANDLER (WITH LOGGING)
+# ---------------------------------------------------------
+def safe_request(method: str, url: str, **kwargs) -> Optional[requests.Response]:
+    """Wrapper for requests to handle exceptions and log."""
+    try:
+        response = requests.request(method, url, **kwargs)
+        response.raise_for_status()
+        logger.info(f"HTTP {method.upper()} {url} → {response.status_code}")
+        return response
+    except requests.RequestException as e:
+        logger.error(f"HTTP {method.upper()} {url} ERROR: {e}")
+        return None
+
+
+# ---------------------------------------------------------
+# FORMAT DATETIME FOR LOGGING
+# ---------------------------------------------------------
+def format_datetime(dt: Optional[datetime] = None, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
+    """Return formatted datetime string. Defaults to now."""
+    dt = dt or datetime.utcnow()
+    return dt.strftime(fmt)
+
+
+# ---------------------------------------------------------
+# SIMPLE DICTIONARY MERGE UTIL
+# ---------------------------------------------------------
+def merge_dicts(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
+    """Merge two dictionaries, values in b overwrite a."""
+    merged = a.copy()
+    merged.update(b)
+    return merged
+
+
+# ---------------------------------------------------------
+# SIMPLE RETRY DECORATOR
+# ---------------------------------------------------------
+from functools import wraps
+import time
+
+def retry(times: int = 3, delay: float = 1.0):
+    """Decorator to retry a function on exception."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(1, times + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    logger.warning(f"Attempt {attempt}/{times} failed: {e}")
+                    time.sleep(delay)
+            logger.error(f"All {times} attempts failed for {func.__name__}")
+            raise last_exception
+        return wrapper
+    return decorator
