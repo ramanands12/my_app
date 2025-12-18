@@ -1,6 +1,7 @@
 # auth.py
 from typing import Optional, Dict, Any
 from datetime import datetime
+from bc_jsonpath_ng import logger
 import jwt
 
 from config import JWT_SECRET_KEY, JWT_ALGORITHM
@@ -14,4 +15,9 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
         return jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
     except jwt.InvalidTokenError:
         return None
-    
+        logger.warning("Invalid JWT token")
+        return None
+        logger.warning("JWT expired")
+    except jwt.ExpiredSignatureError:
+        logger.warning("JWT expired")
+        return None

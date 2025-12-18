@@ -200,3 +200,12 @@ def retry(times: int = 3, delay: float = 1.0):
             raise last_exception
         return wrapper
     return decorator
+# Example usage of retry decorator
+@retry(times=5, delay=2.0)
+def unstable_function():
+
+    if secrets.randbelow(2) == 0:
+        raise ValueError("Random failure occurred!")
+    return "Success!"
+
+
